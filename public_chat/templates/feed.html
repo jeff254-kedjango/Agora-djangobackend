@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+{% load static %}
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title>Page Title</title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="{% static 'styles/main.css' %}">
+        <!-- <script src="main.js" async defer></script> -->
+    </head>
+    <body>
+        <section class="main--container">
+            <h1>Public Feed</h1>
+            <form id="post_form">
+                <input type="text" name="body"/>
+            </form>
+
+            <div id="post__list">
+                {% for post in posts %}
+                    <div class="post-wrapper">
+                        <strong>Posted {{post.created|timesince}} ago</strong>
+                        <p>{{ post.body }}</p>
+                    </div>
+                {% endfor %}
+            </div>
+        </section>
+    </body>
+    <script type="text/javas"></script>
+    <script type="text/javascript" src="{% static 'js/agora-rtm.js' %}">
+
+        const APP_ID = "84dd2596f11d4feeaef4a195072eeac2"
+        const TOKEN = "007eJxTYHh7+Hio7BRL9tv8T+svWvv06sxJVTe9o7DmrmmcT+C5jg8KDBYmKSlGppZmaYaGKSZpqamJqWkmiYaWpgbmRkBOslE2P1dKQyAjw/mwhyyMDBAI4rMw5CZm5jEwAABEfx9L"
+        const UID = String(Math.floor(Math.random() * 232))
+        const CHANNEL_NAME = "main"
+
+        let client;
+        let channel;
+
+        let iniateRTM = async () => {
+            client = await AgoraRTM.createInstance(APP_ID)
+            await client.login({uid, token})
+
+            channel = await client.createChannel(CHANNEL_NAME)
+            await channel.join()
+
+            channel.on('ChannelMessage', (message, peerId) => {
+                post = JSON.parse(message.text)
+                addMessageToDom(post)
+            })
+        }
+
+        initiateRTM()
+
+        let form = document.getElementById('post_form')
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault()
+            let bodyText = e.target.body.value
+            console.log(bodyText)
+            form.reset()
+
+            submitData(bodyText)
+        })
+
+
+        let submitData = async (bodyText) => {
+            let response = await fetch('/add/', {
+                method:'POST',
+                headers:{
+                    'Content-Type':'application/json'
+                },
+                body:JSON.stringify({'body':bodyText, 'sender':username})
+            })
+            let data = await response.json()
+            data['sender'] = username
+
+            channel.sendMessage({text:JSON.stringify(data), type:'text'})
+
+            console.log('Data:', data )
+            addMessageToDom(data)
+
+
+        }
+
+
+        let addMessageToDom  = async (message) => {
+            let postList = document.getElementById('post__list')
+
+            let timeSince = new Intl.RelativeTimeFormat('en')
+
+            let messageTime = new Date()
+
+            let diff = new Date() - new Date(messageTime)
+            let ago = timeSince.format(- diff/(1000*60*60*24), 'seconds')
+
+            let postWrapper = `<div class="post-wrapper">
+                                    <strong>Posted ${ago} - by ${message.sender}</strong>
+                                    <p class="post__body">${ message.body }</p>
+                                
+                                </div>`
+
+            postList.insertAdjacentHTML('afterbegin', postWrapper)
+        }
+    </script>
+</html>
